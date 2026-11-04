@@ -113,11 +113,21 @@ entrega siempre el mismo objeto y no permite elegir campos. GraphQL resuelve jus
 especifica en la query qué campos quiere y recibe únicamente esos. Además de ancho de banda
 desperdiciado, es más superficie de exposición de datos sensibles (hostname, versiones del SO).
 
+## Capturas de la entrega
+
+**Vista web `/servidor` con el polling visible** (panel Red de Firefox: un pedido a la API cada 5 segundos):
+
+![Vista /servidor con polling](docs/servidor.png)
+
+**API JSON `/api/metrics`:**
+
+![API /api/metrics](docs/api.png)
+
 ## Entrega
 
 - [x] Proyecto Laravel con service, vista y API funcionando
 - [x] Actualización automática por polling
 - [x] README con sistema operativo usado y respuestas
-- [ ] Link al repositorio de GitHub
-- [ ] Captura de `/servidor` funcionando
-- [ ] Captura de la respuesta de `/api/metrics`
+- [x] Link al repositorio de GitHub: <https://github.com/Alejaquiroga/TP-Monitor-de-servidor-con-Laravel>
+- [x] Captura de `/servidor` funcionando (con polling en Red)
+- [x] Captura de la respuesta de `/api/metrics`
