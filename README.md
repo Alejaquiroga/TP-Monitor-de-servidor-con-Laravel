@@ -12,11 +12,24 @@ reutilizan sin modificarla.
 Nombre del equipo, sistema operativo, versión de PHP, uso de disco, uso de memoria, uso de CPU,
 tiempo encendido (uptime) y temperatura de la CPU.
 
-## Sistema operativo usado (desafío opcional del TP)
+## Sistema operativo: multiplataforma (Windows y Linux)
 
-El TP base lee los datos en **Windows** con PowerShell + WMI. Este proyecto resuelve el **desafío
-opcional del final**: el service está implementado completamente para **Linux**, leyendo los datos de
-los archivos del sistema que indica la consigna.
+El TP base lee los datos en **Windows** con PowerShell + WMI. Este proyecto además
+resuelve el **desafío opcional del final**: el service detecta el sistema operativo en tiempo
+de ejecución (`PHP_OS_FAMILY`) y usa la implementación que corresponde en cada plataforma.
+
+| Ítem | Windows | Linux |
+|---|---|---|
+| Detección | `PHP_OS_FAMILY === 'Windows'` | cualquier otro SO compatible con `/proc` y `/sys` |
+| Memoria | `Get-CimInstance Win32_OperatingSystem` (`TotalVisibleMemorySize`, `FreePhysicalMemory`) | `/proc/meminfo` (`MemTotal`, `MemAvailable` o `MemFree`) |
+| Uso de CPU | `Get-CimInstance Win32_Processor` (`LoadPercentage`) | `/proc/stat` (dos lecturas separadas) |
+| Uptime | `Win32_OperatingSystem.LastBootUpTime` | `/proc/uptime` |
+| Temperatura | `MSAcpi_ThermalZoneTemperature` (root/wmi, si hay permisos y sensor) | `/sys/class/thermal/thermal_zone*/temp` (fallback `hwmon/temp*_input`) |
+
+En Windows la métrica se obtiene con una única llamada fija a PowerShell (`-EncodedCommand`,
+Base64 UTF-16LE, sin interpolar entrada del usuario); la salida JSON se decodifica en PHP.
+Si algún dato no está disponible (permiso denegado, sin sensor, comando deshabilitado), el campo
+queda en `null` y la vista lo muestra como "No disponible"; la app nunca se rompe.
 
 Se desarrolló y probó en:
 
