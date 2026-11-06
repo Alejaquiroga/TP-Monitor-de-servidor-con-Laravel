@@ -31,22 +31,34 @@ Base64 UTF-16LE, sin interpolar entrada del usuario); la salida JSON se decodifi
 Si algún dato no está disponible (permiso denegado, sin sensor, comando deshabilitado), el campo
 queda en `null` y la vista lo muestra como "No disponible"; la app nunca se rompe.
 
-Se desarrolló y probó en:
+Se desarrolló y verificó en:
 
 | Ítem | Valor |
 |---|---|
 | Sistema | **Linux Mint 22.3 ("Zena")** (base Ubuntu) |
 | Kernel | 7.0.0-42-generic |
 | PHP | 8.4 |
-| Fuente de memoria | `/proc/meminfo` (MemTotal, MemAvailable) |
+| Fuente de memoria | `/proc/meminfo` (MemTotal, MemAvailable, con fallback a MemFree) |
 | Fuente de CPU | `/proc/stat` (dos lecturas separadas para calcular el uso) |
 | Fuente de uptime | `/proc/uptime` |
-| Fuente de temperatura | `/sys/class/thermal/thermal_zone*/temp` |
+| Fuente de temperatura | `/sys/class/thermal/thermal_zone0/temp` (con fallback a otras zonas y `hwmon`) |
+
+**El sistema operativo usado en esta entrega es Linux Mint 22.3.**
+La rama de Windows quedó implementada siguiendo la consigna (script y salida exactamente
+como el TP), pero **no se probó en hardware Windows real**: en esta máquina es Linux.
+Para verificarla se validó la lógica con un `powershell` simulado en el `PATH`:
+el script viaja codificado en Base64 UTF-16LE, decodifica exactamente el del TP y la salida
+se parsea como array; cualquier fallo (sin `shell_exec`, error de PowerShell, JSON inválido
+parcial) devuelve `null` controlado. Para la evaluación en Windows hace falta levantarlo con
+Laragon/Herd y contrastar `/api/metrics` en Windows, en especial
+`MSAcpi_ThermalZoneTemperature` (que suele ser `null` sin administrador).
 
 Cada dato que no puede leerse queda en `null` y la vista lo muestra como "No disponible"; la app
 nunca se rompe.
 
 ## Cómo ejecutar
+
+### Linux (máquina usada en esta entrega)
 
 ```sh
 php artisan serve
@@ -55,7 +67,17 @@ php artisan serve
 - Vista web: <http://127.0.0.1:8000/servidor> (se actualiza sola cada 5 s)
 - API JSON: <http://127.0.0.1:8000/api/metrics> (máximo 60 pedidos por minuto)
 
-Verificación rápida del servicio desde consola:
+### Windows (Herd, Laragon o XAMPP con PHP 8.3+)
+
+```powershell
+php artisan serve
+Invoke-RestMethod http://127.0.0.1:8000/api/metrics
+```
+
+En Windows, cada pedido dispara PowerShell; si `shell_exec()` está en `disable_functions`
+del `php.ini`, la API responde igual pero el campo queda en `null`.
+
+### Verificación rápida del servicio desde consola
 
 ```sh
 php artisan tinker
@@ -82,13 +104,16 @@ cambiaron; es el problema que resuelven los WebSockets en el próximo TP.
 ### 1. ¿Por qué la temperatura suele aparecer como "No disponible" en Windows?
 
 Porque el dato viene de la clase WMI `MSAcpi_ThermalZoneTemperature` y casi nunca es accesible desde
-un proceso normal. WMI la bloquea por seguridad si el proceso (terminal, PHP) no corre con permisos de
-administrador, y además la placa madre tiene que exponer el sensor ACPI: en muchos equipos la clase
-directamente no existe. Si `Get-CimInstance` falla por cualquiera de esas dos causas, el script
-devuelve `null` y la vista muestra "No disponible". Si se abriera la terminal como administrador y la
-placa informara el sensor, el dato aparecería; si la placa no lo informa, sigue `null` aunque seamos
-administradores. En nuestra máquina el desafío opcional lo resuelve en Linux: la temperatura se
-lee de `/sys/class/thermal/thermal_zone*/temp`, sin necesidad de permisos de administrador.
+un proceso normal. WMI la bloquea por seguridad si el proceso (terminal, PHP) no corre con permisos
+de administrador, y además la placa madre tiene que exponer el sensor ACPI: en muchos equipos la
+clase directamente no existe. Si `Get-CimInstance -ErrorAction Stop` falla por cualquiera de esas
+dos causas, el `try/catch` lo captura y devuelve `null`, y la vista muestra "No disponible". Si se
+abriera la terminal como administrador y la placa informara el sensor, el dato aparecería; si la
+placa no lo informa, sigue `null` aunque seamos administradores. En esta entrega el desarrollo se
+hizo en Linux (acá `thermal_zone0` es accesible sin privilegios y se muestra ~50 °C), por lo que la
+comparación en Windows con administrador no se pudo ejecutar en esta máquina; la consigna de abrir
+la terminal como administrador y comparar aplica al momento de levantar el proyecto en Windows.
+El script sigue la consigna al pie de la letra (incluido `ErrorAction Stop` y el `catch` silencioso).
 
 ### 2. ¿Por qué el script de PowerShell nunca debe incluir datos que vengan del usuario?
 
