@@ -153,11 +153,12 @@ desperdiciado, es más superficie de exposición de datos sensibles (hostname, v
 
 ## Capturas de la entrega
 
-**Vista web `/servidor` con el polling visible** (panel Red de Firefox: un pedido a la API cada 5 segundos):
+**Vista web `/servidor` con el polling visible** (panel Red de Chrome: un `fetch` a `/api/metrics`
+cada 5 segundos, todos con estado 200):
 
 ![Vista /servidor con polling](docs/servidor.png)
 
-**API JSON `/api/metrics`:**
+**API JSON `/api/metrics`** (respuesta completa, con las 9 claves):
 
 ![API /api/metrics](docs/api.png)
 
